@@ -91,7 +91,7 @@ export default function SignUpPage() {
 
                     <button
                         type="button"
-                        onClick={() => signIn("google")}
+                        onClick={() => signIn("google", { callbackUrl: "/profile" })}
                         className="w-full py-3 bg-white hover:bg-green-100 text-black font-bold rounded-md transition duration-300 flex items-center justify-center gap-2 border border-gray-300"
                     >
                         <FcGoogle className="text-xl" />
