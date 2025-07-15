@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { toast } from "sonner";
+import { error } from "console";
 
 type Profile = {
   id: string;
@@ -17,6 +18,11 @@ export default function ProfilesPage() {
   const [name, setName] = useState("");
   const [relation, setRelation] = useState("");
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedProfileId, setSelectedProfileId] = useState("");
+  const [medicineName, setMedicineName] = useState("");
+  const [diseases, setDiseases] = useState("");
+  const [dose, setDose] = useState(1);
 
   const fetchProfiles = async () => {
     try {
@@ -40,7 +46,7 @@ export default function ProfilesPage() {
 
       setName("");
       setRelation("");
-      fetchProfiles(); // Refresh the list
+      fetchProfiles();
     } catch (err) {
       console.error("Failed to add profile", err);
       toast.error("Error during adding profile");
@@ -51,12 +57,44 @@ export default function ProfilesPage() {
     try {
       await axios.delete(`/api/profiles/${id}`);
       toast.success("Profile deleted");
-      fetchProfiles(); // Refresh the list
+      fetchProfiles();
     } catch (err) {
       console.error("Failed to delete profile", err);
       toast.error("Failed to delete profile");
     }
   };
+
+  const handleAddMedician = async () => {
+    
+    if(medicineName && diseases && dose && selectedProfileId ){
+    const x = await axios.get(`/api/profiles/${selectedProfileId}`)
+    console.log(x)
+    try {
+      const res = await axios.post("/api/addmedician", {
+        name: medicineName,
+        dieases:diseases ,
+        dose :dose,
+        profileId :selectedProfileId,
+      })
+      if(res.status===201){
+        setDiseases("")
+        setDose(1)
+        setMedicineName("")
+        toast.success(`Medician added in ${x?.data[0]?.name}`)
+      }
+     
+    } catch (error) {
+      console.log(error)
+
+    }
+  }else{
+    toast.error("Opps something went wrong!")
+  }
+
+  }
+
+
+
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -91,6 +129,7 @@ export default function ProfilesPage() {
           >
             Add Profile
           </button>
+          
         </div>
 
         <hr className="border-zinc-700" />
@@ -113,13 +152,27 @@ export default function ProfilesPage() {
                       {profile.relation}
                     </p>
                   </div>
-                  <button
-                    onClick={() => handleDelete(profile.id)}
-                    className="ml-4 text-black bg-red-500 py-2 px-2 rounded-md text-sm hover:text-zinc-50 font-semibold"
-                  >
-                    Delete
-                  </button>
+
+                  <div className="flex gap-2">
+                    
+
+                    <button
+                      onClick={() => { setShowModal(true), setSelectedProfileId(profile.id) }}
+                      className="text-white bg-blue-500 py-2 px-3 rounded-md text-sm hover:bg-blue-600 font-semibold"
+                    >
+                      Add Medicine
+                    </button>
+                    <button className="bg-white text-black font-semibold rounded-md px-1">see all med</button>
+                    <button
+                      onClick={() => handleDelete(profile.id)}
+                      className="text-black bg-red-500 py-2 px-2 rounded-md text-sm hover:text-zinc-50 font-semibold"
+                    >
+                      Delete
+                    </button>
+                    
+                  </div>
                 </li>
+
               ))}
             </ul>
           ) : (
@@ -127,6 +180,55 @@ export default function ProfilesPage() {
           )}
         </div>
       </div>
+      {showModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-50">
+          <div className="bg-zinc-900 p-6 rounded-xl shadow-lg w-full max-w-md space-y-4 border border-zinc-700">
+            <h3 className="text-xl font-bold text-green-400">Add Medicine</h3>
+
+            <input
+              type="text"
+              placeholder="Medicine Name"
+              value={medicineName}
+              onChange={(e) => setMedicineName(e.target.value)}
+              required
+              className="w-full px-4 py-2 rounded-lg bg-zinc-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+
+            <input
+            required
+              type="text"
+              placeholder="Diseases"
+              value={diseases}
+              onChange={(e) => setDiseases(e.target.value)}
+              className="w-full px-4 py-2 rounded-lg bg-zinc-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+
+            <input
+            required
+              type="number"
+              placeholder="Dose"
+              value={dose}
+              onChange={(e) => setDose(Number(e.target.value))}
+              className="w-full px-4 py-2 rounded-lg bg-zinc-800 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => setShowModal(false)}
+                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAddMedician}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
